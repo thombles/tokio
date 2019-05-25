@@ -24,8 +24,8 @@ fn event_macros_dont_infinite_loop() {
             true
         }
 
-        fn new_span(&self, _: &span::Attributes) -> span::Id {
-            span::Id::from_u64(0xAAAA)
+        fn new_span(&self, _: &span::Attributes) -> u64 {
+            0xAAAA
         }
 
         fn record(&self, _: &span::Id, _: &span::Record) {}

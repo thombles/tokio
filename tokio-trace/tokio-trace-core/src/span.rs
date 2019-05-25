@@ -1,6 +1,7 @@
 //! Spans represent periods of time in the execution of a program.
 
-use {field, Metadata};
+use {field, dispatcher, Metadata};
+use std::hash::{Hash, Hasher};
 
 /// Identifies a span within the context of a subscriber.
 ///
@@ -10,10 +11,13 @@ use {field, Metadata};
 ///
 /// [`Subscriber`]: ../subscriber/trait.Subscriber.html
 /// [`new_span`]: ../subscriber/trait.Subscriber.html#method.new_span
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq)]
 // TODO(eliza): when Tokio's minimum Rust version is >= 1.28, change the
 // internal representation to a `NonZeroU64`.
-pub struct Id(u64);
+pub struct Id {
+    id: u64,
+    registrar: dispatcher::Registrar,
+}
 
 /// Attributes provided to a `Subscriber` describing a new span when it is
 /// created.
@@ -43,28 +47,35 @@ enum Parent {
 // ===== impl Span =====
 
 impl Id {
-    /// Constructs a new span ID from the given `u64`.
-    ///
-    /// **Note**: Span IDs must be greater than zero.
-    ///
-    /// # Panics
-    /// - If the provided `u64` is 0
-    pub fn from_u64(u: u64) -> Self {
-        assert!(u > 0);
-        Id(u)
+    pub(crate) fn new(id: u64, registrar: dispatcher::Registrar) -> Self {
+        assert!(id > 0);
+        Self {
+            id,
+            registrar,
+        }
     }
 
     /// Returns the span's ID as a  `u64`.
     pub fn into_u64(&self) -> u64 {
-        self.0
+        self.id
     }
 }
 
-#[deprecated(since = "0.2.1", note = "please use `Subscriber::clone_span` instead")]
-#[doc(hidden)]
 impl Clone for Id {
     fn clone(&self) -> Self {
-        Id::from_u64(self.into_u64())
+        self.registrar.clone_span(&self)
+    }
+}
+
+impl Drop for Id {
+    fn drop(&mut self) {
+        self.registrar.drop_span(&self);
+    }
+}
+
+impl Hash for Id {
+    fn hash<H: Hasher>(&self, hasher: &mut H) {
+        self.id.hash(hasher);
     }
 }
 

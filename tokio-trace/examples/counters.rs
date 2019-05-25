@@ -77,10 +77,10 @@ impl Subscriber for CounterSubscriber {
         interest
     }
 
-    fn new_span(&self, new_span: &span::Attributes) -> Id {
+    fn new_span(&self, new_span: &span::Attributes) -> u64 {
         new_span.record(&mut self.visitor());
         let id = self.ids.fetch_add(1, Ordering::SeqCst);
-        Id::from_u64(id as u64)
+        id as u64
     }
 
     fn record_follows_from(&self, _span: &Id, _follows: &Id) {

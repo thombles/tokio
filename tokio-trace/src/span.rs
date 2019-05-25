@@ -144,7 +144,7 @@ pub struct Span {
 /// Unlike `Span`, this type is only constructed for spans which _have_ been
 /// enabled by the current filter. This type is primarily used for implementing
 /// span handles; users should typically not need to interact with it directly.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct Inner {
     /// The span's ID, as provided by `subscriber`.
     id: Id,
@@ -439,14 +439,6 @@ impl Into<Option<Id>> for Span {
     }
 }
 
-impl Drop for Span {
-    fn drop(&mut self) {
-        if let Some(inner) = self.inner.take() {
-            inner.subscriber.drop_span(inner.id);
-        }
-    }
-}
-
 // ===== impl Inner =====
 
 impl Inner {
@@ -483,7 +475,7 @@ impl Inner {
 
     /// Returns the span's ID.
     fn id(&self) -> Id {
-        self.subscriber.clone_span(&self.id)
+        self.id.clone()
     }
 
     fn record(&self, values: &Record) {
@@ -507,15 +499,6 @@ impl cmp::PartialEq for Inner {
 impl Hash for Inner {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.id.hash(state);
-    }
-}
-
-impl Clone for Inner {
-    fn clone(&self) -> Self {
-        Inner {
-            id: self.subscriber.clone_span(&self.id),
-            subscriber: self.subscriber.clone(),
-        }
     }
 }
 

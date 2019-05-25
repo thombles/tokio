@@ -97,6 +97,7 @@ where
         .unwrap_or_else(|_| f(&Dispatch::none()))
 }
 
+#[derive(Clone)]
 pub(crate) struct Registrar(Weak<Subscriber + Send + Sync>);
 
 impl Dispatch {
@@ -150,7 +151,8 @@ impl Dispatch {
     /// [`new_span`]: ../subscriber/trait.Subscriber.html#method.new_span
     #[inline]
     pub fn new_span(&self, span: &span::Attributes) -> span::Id {
-        self.subscriber.new_span(span)
+        let id = self.subscriber.new_span(span);
+        span::Id::new(id, self.registrar())
     }
 
     /// Record a set of values on a span.
@@ -240,7 +242,8 @@ impl Dispatch {
     /// [`new_span`]: ../subscriber/trait.Subscriber.html#method.new_span
     #[inline]
     pub fn clone_span(&self, id: &span::Id) -> span::Id {
-        self.subscriber.clone_span(&id)
+        let id = self.subscriber.clone_span(&id);
+        span::Id::new(id, self.registrar())
     }
 
     /// Notifies the subscriber that a [span ID] has been dropped.
@@ -256,7 +259,7 @@ impl Dispatch {
     /// [`clone_span`]: ../subscriber/trait.Subscriber.html#method.clone_span
     /// [`new_span`]: ../subscriber/trait.Subscriber.html#method.new_span
     #[inline]
-    pub fn drop_span(&self, id: span::Id) {
+    pub fn drop_span(&self, id: &span::Id) {
         self.subscriber.drop_span(id)
     }
 
@@ -298,8 +301,8 @@ impl Subscriber for NoSubscriber {
         subscriber::Interest::never()
     }
 
-    fn new_span(&self, _: &span::Attributes) -> span::Id {
-        span::Id::from_u64(0xDEAD)
+    fn new_span(&self, _: &span::Attributes) -> u64 {
+        0xDEAD
     }
 
     fn event(&self, _event: &Event) {}
@@ -322,10 +325,40 @@ impl Registrar {
         self.0.upgrade().map(|s| s.register_callsite(metadata))
     }
 
+    pub(crate) fn clone_span(&self, id: &span::Id) -> span::Id {
+        let id = self.0.upgrade()
+            .map(|s| s.clone_span(id))
+            .unwrap_or(id.into_u64());
+        span::Id::new(id, self.clone())
+    }
+
+    pub(crate) fn drop_span(&self, id: &span::Id) {
+        self.0.upgrade().map(|s| s.drop_span(id));
+    }
+
     pub(crate) fn is_alive(&self) -> bool {
         self.0.upgrade().is_some()
     }
 }
+
+impl fmt::Debug for Registrar {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.pad("Registrar(...)")
+    }
+}
+
+impl PartialEq for Registrar {
+    fn eq(&self, other: &Self) -> bool {
+        if let Some(this) = self.0.upgrade() {
+            if let Some(other) = other.0.upgrade() {
+                return Arc::ptr_eq(&this, &other);
+            }
+        }
+        false
+    }
+}
+
+impl Eq for Registrar {}
 
 // ===== impl State =====
 

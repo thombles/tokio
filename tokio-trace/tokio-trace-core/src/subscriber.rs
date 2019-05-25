@@ -161,7 +161,7 @@ pub trait Subscriber: 'static {
     /// [`Attributes`]: ../span/struct.Attributes.html
     /// [visitor]: ../field/trait.Visit.html
     /// [`record` method]: ../span/struct.Attributes.html#method.record
-    fn new_span(&self, span: &span::Attributes) -> span::Id;
+    fn new_span(&self, span: &span::Attributes) -> u64;
 
     // === Notification methods ===============================================
 
@@ -286,8 +286,8 @@ pub trait Subscriber: 'static {
     ///
     /// [span ID]: ../span/struct.Id.html
     /// [`drop_span`]: trait.Subscriber.html#method.drop_span
-    fn clone_span(&self, id: &span::Id) -> span::Id {
-        id.clone()
+    fn clone_span(&self, id: &span::Id) -> u64 {
+        id.into_u64()
     }
 
     /// Notifies the subscriber that a [span ID] has been dropped.
@@ -312,9 +312,7 @@ pub trait Subscriber: 'static {
     ///
     /// [span ID]: ../span/struct.Id.html
     /// [`clone_span`]: trait.Subscriber.html#method.clone_span
-    fn drop_span(&self, id: span::Id) {
-        let _ = id;
-    }
+    fn drop_span(&self, id: &span::Id) { }
 
     // === Downcasting methods ================================================
 

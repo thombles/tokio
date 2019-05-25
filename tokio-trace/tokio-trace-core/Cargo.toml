@@ -7,8 +7,8 @@ name = "tokio-trace-core"
 #   - Cargo.toml
 #   - README.md
 # - Update CHANGELOG.md.
-# - Create "v0.2.x" git tag.
-version = "0.2.0"
+# - Create "v0.3.x" git tag.
+version = "0.3.0"
 authors = ["Tokio Contributors <team@tokio.rs>"]
 license = "MIT"
 repository = "https://github.com/tokio-rs/tokio"
@@ -19,6 +19,7 @@ Core primitives for tokio-trace.
 """
 categories = ["development-tools::debugging"]
 keywords = ["logging", "tracing"]
+publish = false
 
 [dependencies]
 lazy_static = "1.0.0"
