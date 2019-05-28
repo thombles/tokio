@@ -203,15 +203,15 @@ impl Subscriber for SloggishSubscriber {
     }
 
     fn new_span(&self, span: &tokio_trace::span::Attributes) -> u64 {
-        let next = self.ids.fetch_add(1, Ordering::SeqCst) as u64;
+        let id = self.ids.fetch_add(1, Ordering::SeqCst) as u64;
         let span = Span::new(self.current.id(), span);
-        self.spans.lock().unwrap().insert(id.clone(), span);
+        self.spans.lock().unwrap().insert(id, span);
         id
     }
 
     fn record(&self, span: &tokio_trace::Id, values: &tokio_trace::span::Record) {
         let mut spans = self.spans.lock().expect("mutex poisoned!");
-        if let Some(span) = spans.get_mut(span.into_u64()) {
+        if let Some(span) = spans.get_mut(&span.into_u64()) {
             values.record(span);
         }
     }
@@ -225,7 +225,7 @@ impl Subscriber for SloggishSubscriber {
         let mut stderr = self.stderr.lock();
         let mut stack = self.stack.lock().unwrap();
         let spans = self.spans.lock().unwrap();
-        let data = spans.get(span_id.into_u64());
+        let data = spans.get(&span_id.into_u64());
         let parent = data.and_then(|span| span.parent.as_ref());
         if stack.iter().any(|id| id == span_id) {
             // We are already in this span, do nothing.

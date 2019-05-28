@@ -350,7 +350,7 @@
 //! # pub struct FooSubscriber;
 //! # use tokio_trace::{span::{Id, Attributes, Record}, Metadata};
 //! # impl tokio_trace::Subscriber for FooSubscriber {
-//! #   fn new_span(&self, _: &Attributes) -> Id { Id::from_u64(0) }
+//! #   fn new_span(&self, _: &Attributes) -> u64 { 1 }
 //! #   fn record(&self, _: &Id, _: &Record) {}
 //! #   fn event(&self, _: &tokio_trace::Event) {}
 //! #   fn record_follows_from(&self, _: &Id, _: &Id) {}
